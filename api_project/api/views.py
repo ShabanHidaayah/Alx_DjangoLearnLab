@@ -1,31 +1,19 @@
-from rest_framework import generics, viewsets, permissions
-from .models import Book
-from .serializers import BookSerializer
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from rest_framework.authtoken.views import obtain_auth_token  # IMPORT FOR TOKEN AUTH
+from .views import BookList, BookViewSet
 
-class BookList(generics.ListAPIView):
-    """
-    API endpoint that allows books to be viewed.
-    Read-only access for authenticated users.
-    """
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]  # Allow read for anyone, write for authenticated
+# Create a router and register our ViewSet
+router = DefaultRouter()
+router.register(r'books_all', BookViewSet, basename='book_all')
 
-class BookViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows books to be viewed, created, updated, or deleted.
-    Full CRUD operations require authentication.
-    """
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]  # Require authentication for all operations
-    
-    def get_permissions(self):
-        """
-        Customize permissions based on action
-        """
-        if self.action == 'list' or self.action == 'retrieve':
-            # Allow read-only access for list and retrieve actions
-            return [permissions.IsAuthenticatedOrReadOnly()]
-        # Require full authentication for create, update, delete
-        return [permissions.IsAuthenticated()]
+urlpatterns = [
+    # Route for the BookList view (ListAPIView)
+    path('books/', BookList.as_view(), name='book-list'),
+
+    # Token authentication endpoint - USES DRF'S BUILT-IN obtain_auth_token VIEW
+    path('auth-token/', obtain_auth_token, name='api_token_auth'),
+
+    # Include the router URLs for BookViewSet (all CRUD operations)
+    path('', include(router.urls)),
+]
