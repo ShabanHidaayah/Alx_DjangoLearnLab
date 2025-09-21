@@ -7,7 +7,7 @@ from pathlib import Path
 
 BASE_DIR = Path(_file_).resolve().parent.parent
 
-SECRET_KEY = 'your-secret-key-here'  # In production, use environment variable
+SECRET_KEY = 'your-secret-key-here'  # Use environment variable in production
 
 DEBUG = True
 
@@ -21,8 +21,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',  # Django REST Framework
-    'api',  # Our API app
+    'rest_framework',
+    'rest_framework.authtoken',  # MUST ADD THIS FOR TOKEN AUTHENTICATION
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -93,7 +94,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Django REST Framework settings
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # TOKEN AUTHENTICATION
+        'rest_framework.authentication.SessionAuthentication',  # SESSION AUTH FOR BROWSABLE API
+    ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
-    ]
+        'rest_framework.permissions.IsAuthenticated',  # DEFAULT: REQUIRE AUTHENTICATION
+    ],
 }
