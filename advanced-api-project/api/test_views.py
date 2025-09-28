@@ -228,3 +228,9 @@ class AuthorAPITestCase(TestCase):
         # MUST CHECK STATUS CODE - HTTP 200 OK
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.author1.name)
+        def test_client_login(self):
+    """
+    Test that uses self.client.login
+    """
+    result = self.client.login(username='testuser', password='testpassword123')
+    self.assertTrue(result)
