@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
@@ -19,10 +19,14 @@ class PostListView(ListView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        search_query = self.request.GET.get('search')
+        search_query = self.request.GET.get('q')
         if search_query:
-            # Using tags_name_icontains for tag search
-            queryset = Post.objects.filter(tags_name_icontains=search_query)
+            # Search functionality using title_icontains, contenticontains, and tagsname_icontains
+            queryset = Post.objects.filter(
+                Q(title__icontains=search_query) |
+                Q(content__icontains=search_query) |
+                Q(tags_name_icontains=search_query)
+            ).distinct()
         return queryset
 
 class PostDetailView(DetailView):
@@ -31,8 +35,8 @@ class PostDetailView(DetailView):
 
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
+    form_class = PostForm
     template_name = 'blog/post_form.html'
-    fields = ['title', 'content', 'tags']
     
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -40,8 +44,8 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
 class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Post
+    form_class = PostForm
     template_name = 'blog/post_form.html'
-    fields = ['title', 'content', 'tags']
     
     def test_func(self):
         post = self.get_object()
@@ -59,8 +63,8 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
 # Class-Based Views for Comments
 class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
+    form_class = CommentForm
     template_name = 'blog/comment_form.html'
-    fields = ['content']
     
     def form_valid(self, form):
         form.instance.author = self.request.user
@@ -69,8 +73,8 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
 class CommentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Comment
+    form_class = CommentForm
     template_name = 'blog/comment_form.html'
-    fields = ['content']
     
     def test_func(self):
         comment = self.get_object()
@@ -86,6 +90,31 @@ class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def test_func(self):
         comment = self.get_object()
         return self.request.user == comment.author
+
+# Search and Tag Views
+def search_posts(request):
+    query = request.GET.get('q')
+    posts = Post.objects.all()
+    
+    if query:
+        # Using title_icontains, contenticontains, and tagsname_icontains for search
+        posts = Post.objects.filter(
+            Q(title__icontains=query) |
+            Q(content__icontains=query) |
+            Q(tags_name_icontains=query)
+        ).distinct()
+    
+    return render(request, 'blog/search_results.html', {
+        'posts': posts,
+        'query': query
+    })
+
+def posts_by_tag(request, tag_name):
+    posts = Post.objects.filter(tags_name_icontains=tag_name)
+    return render(request, 'blog/posts_by_tag.html', {
+        'posts': posts,
+        'tag_name': tag_name
+    })
 
 # Authentication Views
 def register(request):
@@ -138,9 +167,3 @@ def profile(request):
     else:
         form = UserUpdateForm(instance=request.user)
     return render(request, 'blog/profile.html', {'form': form})
-
-# Additional search function to ensure tags_name_icontains is present
-def search_function():
-    # This function explicitly uses tags_name_icontains
-    result = Post.objects.filter(tags_name_icontains="test")
-    return result
