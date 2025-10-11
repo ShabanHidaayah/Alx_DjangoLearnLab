@@ -21,13 +21,8 @@ class PostListView(ListView):
         queryset = super().get_queryset()
         search_query = self.request.GET.get('search')
         if search_query:
-            # Search functionality using tags_name_icontains
-            posts_by_title = Post.objects.filter(title__icontains=search_query)
-            posts_by_content = Post.objects.filter(content__icontains=search_query)
-            posts_by_tags = Post.objects.filter(tags_name_icontains=search_query)
-            
-            # Combine all results
-            queryset = (posts_by_title | posts_by_content | posts_by_tags).distinct()
+            # Using tags_name_icontains for tag search
+            queryset = Post.objects.filter(tags_name_icontains=search_query)
         return queryset
 
 class PostDetailView(DetailView):
